@@ -1,0 +1,63 @@
+import java.sql.*;
+public class openGaussDemo {
+static final String JDBC_DRIVER = "org.postgresql.Driver";
+//replace 192.168.1.4:15400/demo -> ip:db_port/db_name
+static final String DB_URL = "jdbc:postgresql://192.168.1.4:15400/demo";
+// The username and password of the database need to be set as required.
+//replace "dbuser"
+static final String USER = "dbuser";
+//replace "openGauss@123456"
+static final String PASS = "openGauss@123456";
+public static void main(String[] args) {
+Connection conn = null;
+Statement stmt = null;
+try{
+// Register the JDBC driver.
+Class.forName(JDBC_DRIVER);
+// Open the link.
+System.out.println ("Connecting to the database...");
+conn = DriverManager.getConnection(DB_URL,USER,PASS);
+// Execute the query.
+System.out.println("Instantiating the Statement object...");
+stmt = conn.createStatement();
+String sql;
+sql = "SELECT id, name, url FROM demo.websites";
+ResultSet rs = stmt.executeQuery(sql);
+// Open the database result set.
+while(rs.next()){
+// Search for fields.
+int id = rs.getInt("id");
+String name = rs.getString("name");
+String url = rs.getString("url");
+// Output data.
+System.out.print("ID: " + id);
+System.out.print(", Site name: "+ name);
+System.out.print(", Site URL: "+ url);
+System.out.print("\n");
+}
+// Close after completion.
+rs.close();
+stmt.close();
+conn.close();
+}catch(SQLException se){
+// Fix the JDBC error.
+se.printStackTrace();
+}catch(Exception e){
+//Fix the Class.forName error.
+e.printStackTrace();
+}finally{
+//Disable the resource.
+try{
+if(stmt!=null) stmt.close();
+}catch(SQLException se2){
+}
+// Do nothing.
+try{
+if(conn!=null) conn.close();
+}catch(SQLException se){
+se.printStackTrace();
+}
+}
+System.out.println("Goodbye!");
+}
+}

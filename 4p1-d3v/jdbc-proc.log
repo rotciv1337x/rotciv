@@ -1,0 +1,271 @@
+#####################################################################################
+JDBC SESSION
+#####################################################################################
+
+[omm@opengauss ~]$ gsql -d postgres -r
+
+
+/////////////////////////////////////////////////////////////////////////////////////
+CREATE THE DATABASE USER, 
+GRANT USER SYSADMIN ROLE, 
+CREATE THE DATBASE 
+GRANT THE USER PERMISSION ON THE DATABASE
+CREATE THE SCHEMA
+SET THE DEFAULT SEARCH-PATH TO THE SCHEMA NAME (SET search_path TO schema_name)
+CREATE A TABLE (optionally insert data into it)
+ADD COMMENTS TO RELEVANT TABLE COLUMNS (COMMENT ON COLUMN table_name.column_name IS 'Site Name';) 
+MODIFY CONFIG FILES (postgresql.conf, pg_hba.conf) TO ALLOW CONNECTIONS FROM ALL IP ADDRESSES (host all all 0.0.0.0/0 sha256) AND HOSTS (listen_addresses=’*’)
+/////////////////////////////////////////////////////////////////////////////////////
+
+openGauss=# CREATE USER dbuser IDENTIFIED BY 'openGauss@123456';
+CREATE ROLE
+openGauss=# ALTER USER dbuser sysadmin;
+ALTER ROLE
+openGauss=# \du
+                                                              List of roles
+ Role name |                                                    Attributes
+              | Member of
+-----------+----------------------------------------------------------------------------------------------------
+--------------+-----------
+ dbuser    | Sysadmin
+              | {}
+ omm       | Sysadmin, Create role, Create DB, Replication, Administer audit, Monitoradmin, Operatoradmin, Polic
+yadmin, UseFT | {}
+
+openGauss=# \q
+[omm@opengauss ~]$ nano /opt/install/data/dn/postgresql.conf
+[omm@opengauss ~]$ gs_om -t restart
+[omm@opengauss ~]$ gsql -d postgres -U dbuser -r
+Password for user dbuser:
+gsql ((openGauss 5.0.3 build 89d144c2) compiled at 2024-07-31 21:24:08 commit 0 last mr  )
+Non-SSL connection (SSL connection is recommended when requiring high-security)
+Type "help" for help.
+
+openGauss=> CREATE DATABASE demo ENCODING 'UTF8' template = template0;
+CREATE DATABASE
+openGauss=> \connect demo
+Password for user dbuser:
+Non-SSL connection (SSL connection is recommended when requiring high-security)
+You are now connected to database "demo" as user "dbuser".
+demo=> CREATE SCHEMA demo;
+CREATE SCHEMA
+demo=> show search_path;
+  search_path
+----------------
+ "$user",public
+(1 row)
+
+demo=> SET search_path TO demo;
+SET
+demo=> show search_path;
+ search_path
+-------------
+ demo
+(1 row)
+
+demo=> CREATE TABLE websites (
+id INT NOT NULL,
+name CHAR(20) NOT NULL DEFAULT '',
+url VARCHAR(255) NOT NULL DEFAULT '',
+PRIMARY KEY (id)
+);
+NOTICE:  CREATE TABLE / PRIMARY KEY will create implicit index "websites_pkey" for table "websites"
+CREATE TABLE
+demo=> COMMENT ON COLUMN websites.name IS 'Site Name';
+COMMENT
+demo=> \d websites
+                           Table "demo.websites"
+ Column |          Type          |                Modifiers
+--------+------------------------+------------------------------------------
+ id     | integer                | not null
+ name   | character(20)          | not null default NULL::bpchar
+ url    | character varying(255) | not null default NULL::character varying
+Indexes:
+    "websites_pkey" PRIMARY KEY, btree (id) TABLESPACE pg_default
+
+demo=> INSERT INTO websites VALUES
+demo-> ('1', 'openGauss', 'https://opengauss.org/zh/'),
+demo-> ('2','Huawei Cloud', 'https://www.huaweicloud.com/'),
+demo-> ('3', 'openEuler', 'https://openeuler.org/zh/'),
+demo-> ('4','Huawei Support Center', 'https://support.huaweicloud.com/') ;
+ERROR:  value too long for type character(20)
+demo=> ALTER TABLE websites ALTER COLUMN name SET DATATYPE char(25);
+ERROR:  syntax error at or near "DATATYPE"
+LINE 1: ALTER TABLE websites ALTER COLUMN name SET DATATYPE char(25)...
+                                                   ^
+demo=> ALTER TABLE websites ALTER COLUMN name SET DATA TYPE char(25);
+ALTER TABLE
+demo=> INSERT INTO websites VALUES
+('4','Huawei Support Center', 'https://support.huaweicloud.com/') ;
+INSERT 0 1
+demo=> \d websites
+                           Table "demo.websites"
+ Column |          Type          |                Modifiers
+--------+------------------------+------------------------------------------
+ id     | integer                | not null
+ name   | character(25)          | not null default NULL::bpchar
+ url    | character varying(255) | not null default NULL::character varying
+Indexes:
+    "websites_pkey" PRIMARY KEY, btree (id) TABLESPACE pg_default
+
+demo=> SELECT * FROM websites;
+ id |           name            |               url
+----+---------------------------+----------------------------------
+  1 | openGauss                 | https://opengauss.org/zh/
+  2 | Huawei Cloud              | https://www.huaweicloud.com/
+  3 | openEuler                 | https://openeuler.org/zh/
+  4 | Huawei Support Center     | https://support.huaweicloud.com/
+(4 rows)
+
+demo=> \q
+[omm@opengauss ~]$ exit
+logout
+[victor@opengauss ~]$ sudo -i
+[sudo] password for victor:
+
+/////////////////////////////////////////////////////////////////////////////////////
+GO TO THE HOME DIRECTORY
+CHECK IF JDK IS INSTALLED (java -version), IF NOT INSTALL IT
+DEPENDING ON SYSTEM ARCHITECTURE, run the following:
+x64:
+wget https://github.com/AdoptOpenJDK/openjdk8-binaries/releases/download/jdk8u252-b09/OpenJDK8U-jdk_x64_linux_hotspot_8u252b09.tar.gz
+
+aarch_64:
+wget https://github.com/AdoptOpenJDK/openjdk8-binaries/releases/download/jdk8u252-b09/OpenJDK8U-jdk_aarch64_linux_hotspot_8u252b09.tar.gz
+
+DECOMPRESS THE FILE INTO THIS DIRECTORY /usr/local (tar -zxvf file_name -C /usr/local)
+UPDATE ENVIRONMENT VARIABLES AND PATH.
+
+APEND THE FOLLOWING TO THE END OF THE SYSTEM ENV FILE (/etc/profile):
+export JAVA_HOME=/usr/local/jdk8u252-b09
+export PATH=$JAVA_HOME/bin:$PATH
+
+REFRESH THE PROFILE
+source /etc/profile
+
+CHECK FOR JDK INSTALLATION AGAIN (java -version)
+/////////////////////////////////////////////////////////////////////////////////////
+
+[root@opengauss ~]# cd /home/
+[root@opengauss home]# java -version
+-bash: java: command not found
+[root@opengauss home]# wget https://github.com/AdoptOpenJDK/openjdk8-binaries/releases/download/jdk8u252-b09/OpenJDK8U-jdk_x64_linux_hotspot_8u252b09.tar.gz
+[root@opengauss home]# tar -zxf OpenJDK8U-jdk_x64_linux_hotspot_8u252b09.tar.gz -C /usr/local/
+[root@opengauss home]# java -version
+openjdk version "1.8.0_252"
+OpenJDK Runtime Environment (AdoptOpenJDK)(build 1.8.0_252-b09)
+OpenJDK 64-Bit Server VM (AdoptOpenJDK)(build 25.252-b09, mixed mode)
+
+/////////////////////////////////////////////////////////////////////////////////////
+GO TO THE /opt DIRECTORY
+DOWNLOAD THE openGauss JDBC CONNECTOR FROM openGauss website (CHECK FOR YOUR SYSTEM ARCHITECTURE)
+
+x86_64:
+wget https://opengauss.obs.cn-south-1.myhuaweicloud.com/5.0.0/x86_openEuler_2203/openGauss-5.0.0-JDBC.tar.gz
+
+arm:
+wget https://opengauss.obs.cn-south-1.myhuaweicloud.com/5.0.0/arm_2203/openGauss-5.0.0-JDBC.tar.gz
+
+DECOMPRESS THE FILE (tar -zxvf file_name)
+CREATE A JAVA FILE AND WRITE ALL THE PROGRAM LOGIC IN IT
+CONNECTION STRING SHOULD FOLLOW THE FORMAT:
+"jdbc:postgresql://ip_address/hostname:port/db_name";
+
+COMPILE THE JAVA CODE AND ADD THE DIRECTORY OF THE POSTGRES DRIVER
+javac -encoding utf8 -cp /opt/postgresql.jar file_name.java 
+(javac -encoding utf8 -cp /opt/postgresql.jar openGaussDemo.java)
+java -cp .:/opt/postgresql.jar  compiled_file 
+(java -cp .:/opt/postgresql.jar  openGaussDemo) 
+
+/////////////////////////////////////////////////////////////////////////////////////
+
+[root@opengauss home]# cd /opt/
+[root@opengauss opt]# ls -l
+total 8
+drwxr-xr-x 8 omm dbgrp 4096 May 14 21:39 install
+drwxr-xr-x 3 omm dbgrp 4096 May 14 21:26 software
+[root@opengauss opt]# wget https://opengauss.obs.cn-south-1.myhuaweicloud.com/5.0.0/x86_openEuler_2203/openGauss-5.0.0-JDBC.tar.gz
+[root@opengauss opt]# tar -zxvf openGauss-5.0.0-JDBC.tar.gz
+postgresql.jar
+opengauss-jdbc-5.0.0.jar
+README_cn.md
+README_en.md
+[root@opengauss opt]# nano openGaussDemo.java
+[root@opengauss opt]# cat openGaussDemo.java
+import java.sql.*;
+public class openGaussDemo {
+static final String JDBC_DRIVER = "org.postgresql.Driver";
+static final String DB_URL = "jdbc:postgresql://192.168.1.4:15400/demo";
+// The username and password of the database need to be set as required.
+static final String USER = "dbuser";
+static final String PASS = "openGauss@123456";
+public static void main(String[] args) {
+Connection conn = null;
+Statement stmt = null;
+try{
+// Register the JDBC driver.
+Class.forName(JDBC_DRIVER);
+// Open the link.
+System.out.println ("Connecting to the database...");
+conn = DriverManager.getConnection(DB_URL,USER,PASS);
+// Execute the query.
+System.out.println("Instantiating the Statement object...");
+stmt = conn.createStatement();
+String sql;
+sql = "SELECT id, name, url FROM demo.websites";
+ResultSet rs = stmt.executeQuery(sql);
+// Open the database result set.
+while(rs.next()){
+// Search for fields.
+int id = rs.getInt("id");
+String name = rs.getString("name");
+String url = rs.getString("url");
+// Output data.
+System.out.print("ID: " + id);
+System.out.print(", Site name: "+ name);
+System.out.print(", Site URL: "+ url);
+System.out.print("\n");
+}
+// Close after completion.
+rs.close();
+stmt.close();
+conn.close();
+}catch(SQLException se){
+// Fix the JDBC error.
+se.printStackTrace();
+}catch(Exception e){
+//Fix the Class.forName error.
+e.printStackTrace();
+}finally{
+//Disable the resource.
+try{
+if(stmt!=null) stmt.close();
+}catch(SQLException se2){
+}
+// Do nothing.
+try{
+if(conn!=null) conn.close();
+}catch(SQLException se){
+se.printStackTrace();
+}
+}
+System.out.println("Goodbye!");
+}
+}
+[root@opengauss opt]#
+[root@opengauss opt]# javac -encoding utf8 -cp /opt/postgresql.jar /opt/openGaussDemo.java
+[root@opengauss opt]#  java -cp .:/opt/postgresql.jar  openGaussDemo
+Connecting to the database...
+May 15, 2025 9:25:50 PM org.postgresql.core.v3.ConnectionFactoryImpl openConnectionImpl
+INFO: [2af14628-f19a-4c4a-a8ac-280520986dc2] Try to connect. IP: 192.168.1.4:15400
+May 15, 2025 9:25:50 PM org.postgresql.core.v3.ConnectionFactoryImpl openConnectionImpl
+INFO: [192.168.1.4:42746/192.168.1.4:15400] Connection is established. ID: 2af14628-f19a-4c4a-a8ac-280520986dc2
+May 15, 2025 9:25:50 PM org.postgresql.core.v3.ConnectionFactoryImpl openConnectionImpl
+INFO: Connect complete. ID: 2af14628-f19a-4c4a-a8ac-280520986dc2
+Instantiating the Statement object...
+ID: 1, Site name: openGauss                , Site URL: https://opengauss.org/zh/
+ID: 2, Site name: Huawei Cloud             , Site URL: https://www.huaweicloud.com/
+ID: 3, Site name: openEuler                , Site URL: https://openeuler.org/zh/
+ID: 4, Site name: Huawei Support Center    , Site URL: https://support.huaweicloud.com/
+Goodbye!
+ 

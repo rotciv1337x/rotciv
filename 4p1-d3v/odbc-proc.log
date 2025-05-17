@@ -1,0 +1,244 @@
+#####################################################################################
+ODBC SESSION
+#####################################################################################
+
+/////////////////////////////////////////////////////////////////////////////////////
+GO TO THE /opt DIRECTORY
+CREATE THE odbc DIRECTORY
+DOWNLOAD THE ODBC package 
+wget https://cyfuture.dl.sourceforge.net/project/unixodbc/unixODBC/2.3.0/unixODBC-2.3.0.tar.gz
+
+DECOMPRESS THE PACKAGE tar -zxvf file_name
+GO TO THE DIRECTORY FROM THE RESULT OF THE DECOMPRESSION
+EDIT THE FILE configure, MAKE SURE LIB_VERSION=”1:0:0” 
+RUN configure WITH THE FOLLOWING ARGUMENTS --enable-gui=no, --build=aarch64-unknown-linux-gnu (if using an ARM-based server)
+x86_64
+./configure --enable-gui=no
+
+ARM
+./configure --enable-gui=no --build=aarch64-unknown-linux-gnu
+
+IF STDERR RETURNS THE ERROR RETURNS
+configure: error: no acceptable C compiler found in $PATH
+
+INSTALL THE C COMPILER PROVIDED IN THE DEVELOPMENT TOOLS PACKAGE
+sudo dnf groupinstall “Development Tools”
+
+RERUN THE configure FILE, WITH THE APPROPRIATE FLAGS
+x86_64
+./configure --enable-gui=no
+
+ARM
+./configure --enable-gui=no --build=aarch64-unknown-linux-gnu
+
+RUN make
+
+GO UP ONE DIRECTORY (cd ..)
+
+DOWNLOAD THE openGauss ODBC CONNECTOR FROM THE openGauss WEBSITE
+
+x86_64
+wget https://opengauss.obs.cn-south-1.myhuaweicloud.com/5.0.0/x86_openEuler_2203/openGauss-5.0.0-ODBC.tar.gz 
+
+ARM
+wget https://opengauss.obs.cn-south-1.myhuaweicloud.com/5.0.0/arm_2203/openGauss-5.0.0-ODBC.tar.gz 
+
+COPY THE CONTENTS IN THE lib FOLDERS TO /usr/local/lib
+cp /opt/odbc/odbc/lib/* /usr/local/lib/
+cp /opt/odbc/lib/* /usr/local/lib/
+APPEND (OR CREATE) THE FOLLOWING TO THE END OF THE FILE /usr/local/etc/odbcinst.ini
+
+[GaussMPP] 
+Driver64=/usr/local/lib/psqlodbcw.so 
+setup=/usr/local/lib/psqlodbcw.so
+
+APPEND (OR CREATE) THE FOLLOWING TO THE END OF THE FILE /usr/local/etc/odbcinst.ini
+
+[MPPODBC]
+Driver=GaussMPP 
+Servername=ip_address 
+Database=db_name
+Username=db_user
+Password=db_user_password 
+Port=dp_port
+Sslmode=allow
+
+EDIT THE ~/.bashrc FILE
+APPENED THE FOLLOWING TO THE END OF THE FILE:
+
+export LD_LIBRARY_PATH=/usr/local/lib/:$LD_LIBRARY_PATH 
+export ODBCSYSINI=/usr/local/etc 
+export ODBCINI=/usr/local/etc/odbc.ini
+
+REFRESH THE FILE
+Source ~./bashrc
+
+VERIFY THE CONFIGURATION
+isql -v MPPODBC
+
+
+/////////////////////////////////////////////////////////////////////////////////////
+
+[root@opengauss ~]# cd /opt
+[root@opengauss opt]# mkdir odbc
+[root@opengauss opt]# cd odbc
+[root@opengauss odbc]# wget https://cyfuture.dl.sourceforge.net/project/unixodbc/unixODBC/2.3.0/unixODBC-2.3.0.tar.gz
+Saving to: ‘unixODBC-2.3.0.tar.gz’
+
+unixODBC-2.3.0.tar.gz       100%[===========================================>]   1.72M  11.0MB/s    in 0.2s
+
+2025-05-16 05:57:12 (11.0 MB/s) - ‘unixODBC-2.3.0.tar.gz’ saved [1804749/1804749]
+
+[root@opengauss odbc]# tar -zxvf unixODBC-2.3.0.tar.gz
+[root@opengauss odbc]# cd unixODBC-2.3.0
+[root@opengauss unixODBC-2.3.0]# nano configure
+[root@opengauss unixODBC-2.3.0]# ./configure --enable-gui=no
+checking for a BSD-compatible install... /usr/bin/install -c
+checking whether build environment is sane... yes
+checking for a thread-safe mkdir -p... /usr/bin/mkdir -p
+checking for gawk... gawk
+checking whether make sets $(MAKE)... no
+checking for gawk... (cached) gawk
+checking for bison... no
+checking for byacc... no
+checking for style of include used by make... none
+checking for gcc... no
+checking for cc... no
+checking for cl.exe... no
+configure: error: in `/opt/odbc/unixODBC-2.3.0':
+configure: error: no acceptable C compiler found in $PATH
+See `config.log' for more details.
+[root@opengauss ~]# dnf groupinstall "Development Tools"
+[root@opengauss ~]# cd /opt/odbc/
+[root@opengauss odbc]# cd unixODBC-2.3.0
+[root@opengauss unixODBC-2.3.0]# ./configure --enable-gui=no
+[root@opengauss unixODBC-2.3.0]# make
+
+[root@opengauss unixODBC-2.3.0]# cd ..
+[root@opengauss odbc]# wget https://opengauss.obs.cn-south-1.myhuaweicloud.com/5.0.0/x86_openEuler_2203/openGauss-5.0.0-ODBC.tar.gz
+
+2025-05-16 06:16:43 (2.83 MB/s) - ‘openGauss-5.0.0-ODBC.tar.gz’ saved [9455102/9455102]
+
+[root@opengauss odbc]# tar -zxvf openGauss-5.0.0-ODBC.tar.gz
+[root@opengauss odbc]# ls -l
+total 11012
+drwxr-x---  2 root   root      4096 Mar 28  2023 lib
+drwxr-x---  3 root   root      4096 Mar 28  2023 odbc
+-rw-r--r--  1 root   root   9455102 Mar 29  2023 openGauss-5.0.0-ODBC.tar.gz
+drwxr-xr-x 19 victor victor    4096 May 16 06:14 unixODBC-2.3.0
+-rw-r--r--  1 root   root   1804749 Apr 20  2010 unixODBC-2.3.0.tar.gz
+[root@opengauss odbc]# cd lib/
+[root@opengauss lib]# ls -l
+total 26212
+-rwxr-x--- 1 root root   18672 Mar 28  2023 libcom_err_gauss.so
+-rwxr-x--- 1 root root   18672 Mar 28  2023 libcom_err_gauss.so.3
+-rwxr-x--- 1 root root   18672 Mar 28  2023 libcom_err_gauss.so.3.0
+-rwxr-x--- 1 root root   55592 Mar 28  2023 libconfig.so
+-rwxr-x--- 1 root root   55592 Mar 28  2023 libconfig.so.4
+-rwxr-x--- 1 root root 2901144 Mar 28  2023 libcrypto.so
+-rwxr-x--- 1 root root 2901152 Mar 28  2023 libcrypto.so.1.1
+-rwxr-x--- 1 root root  416040 Mar 28  2023 libgssapi_krb5_gauss.so
+-rwxr-x--- 1 root root  416040 Mar 28  2023 libgssapi_krb5_gauss.so.2
+-rwxr-x--- 1 root root  416040 Mar 28  2023 libgssapi_krb5_gauss.so.2.2
+-rwxr-x--- 1 root root  147400 Mar 28  2023 libgssrpc_gauss.so
+-rwxr-x--- 1 root root  147400 Mar 28  2023 libgssrpc_gauss.so.4
+-rwxr-x--- 1 root root  147400 Mar 28  2023 libgssrpc_gauss.so.4.2
+-rwxr-x--- 1 root root  289208 Mar 28  2023 libk5crypto_gauss.so
+-rwxr-x--- 1 root root  289208 Mar 28  2023 libk5crypto_gauss.so.3
+-rwxr-x--- 1 root root  289208 Mar 28  2023 libk5crypto_gauss.so.3.1
+-rwxr-x--- 1 root root 1039952 Mar 28  2023 libkrb5_gauss.so
+-rwxr-x--- 1 root root 1039952 Mar 28  2023 libkrb5_gauss.so.3
+-rwxr-x--- 1 root root 1039952 Mar 28  2023 libkrb5_gauss.so.3.3
+-rwxr-x--- 1 root root   68112 Mar 28  2023 libkrb5support_gauss.so
+-rwxr-x--- 1 root root   68112 Mar 28  2023 libkrb5support_gauss.so.0
+-rwxr-x--- 1 root root   68112 Mar 28  2023 libkrb5support_gauss.so.0.1
+-rwxr-x--- 1 root root    1125 Mar 28  2023 libodbccr.la
+-rwxr-x--- 1 root root   67680 Mar 28  2023 libodbccr.so
+-rwxr-x--- 1 root root   67680 Mar 28  2023 libodbccr.so.2
+-rwxr-x--- 1 root root   67680 Mar 28  2023 libodbccr.so.2.0.0
+-rwxr-x--- 1 root root    1034 Mar 28  2023 libodbcinst.la
+-rwxr-x--- 1 root root  116600 Mar 28  2023 libodbcinst.so
+-rwxr-x--- 1 root root  116600 Mar 28  2023 libodbcinst.so.2
+-rwxr-x--- 1 root root  116600 Mar 28  2023 libodbcinst.so.2.0.0
+-rwxr-x--- 1 root root    1010 Mar 28  2023 libodbc.la
+-rwxr-x--- 1 root root  666448 Mar 28  2023 libodbc.so
+-rwxr-x--- 1 root root  666448 Mar 28  2023 libodbc.so.2
+-rwxr-x--- 1 root root  666448 Mar 28  2023 libodbc.so.2.0.0
+-rwxr-x--- 1 root root  114104 Mar 28  2023 libpgport_tool.so
+-rwxr-x--- 1 root root  114104 Mar 28  2023 libpgport_tool.so.1
+-rw-r----- 1 root root  652076 Mar 28  2023 libpq.a
+-rw-r----- 1 root root 3024976 Mar 28  2023 libpq_ce.a
+-rwxr-x--- 1 root root 2013696 Mar 28  2023 libpq_ce.so
+-rwxr-x--- 1 root root 2013696 Mar 28  2023 libpq_ce.so.5
+-rwxr-x--- 1 root root 2013696 Mar 28  2023 libpq_ce.so.5.5
+-rwxr-x--- 1 root root  401512 Mar 28  2023 libpq.so
+-rwxr-x--- 1 root root  401512 Mar 28  2023 libpq.so.5
+-rwxr-x--- 1 root root  401512 Mar 28  2023 libpq.so.5.5
+-rwxr-x--- 1 root root  598136 Mar 28  2023 libssl.so
+-rwxr-x--- 1 root root  598144 Mar 28  2023 libssl.so.1.1
+[root@opengauss lib]# cd ..
+[root@opengauss odbc]# cd odbc/lib/
+[root@opengauss lib]# ls -l
+total 1520
+-rwxr-xr-x 1 root root   1266 Mar 28  2023 psqlodbca.la
+-rwxr-xr-x 1 root root 748336 Mar 28  2023 psqlodbca.so
+-rwxr-xr-x 1 root root   1266 Mar 28  2023 psqlodbcw.la
+-rwxr-xr-x 1 root root 795080 Mar 28  2023 psqlodbcw.so
+[root@opengauss lib]# cp /opt/odbc/odbc/lib/* /usr/local/lib/
+[root@opengauss lib]# cd ..
+[root@opengauss odbc]# cd ..
+[root@opengauss odbc]# ll
+total 11012
+drwxr-x---  2 root   root      4096 Mar 28  2023 lib
+drwxr-x---  3 root   root      4096 Mar 28  2023 odbc
+-rw-r--r--  1 root   root   9455102 Mar 29  2023 openGauss-5.0.0-ODBC.tar.gz
+drwxr-xr-x 19 victor victor    4096 May 16 06:14 unixODBC-2.3.0
+-rw-r--r--  1 root   root   1804749 Apr 20  2010 unixODBC-2.3.0.tar.gz
+[root@opengauss odbc]# cp /opt/
+[root@opengauss ~]# nano ~/.bashrc
+[root@opengauss ~]# source ~/.bashrc
+[root@opengauss ~]# isql -v MPPODBC
+[08001][unixODBC]could not connect to server: Operation now in progress
+        Is the server running on host "192.168.1.4" and accepting
+        TCP/IP connections on port 15400?
+
+[ISQL]ERROR: Could not SQLConnect
+[root@opengauss ~]# su - omm
+[omm@opengauss ~]$ gs_om -t restart
+Stopping cluster.
+=========================================
+Successfully stopped cluster.
+=========================================
+End stop cluster.
+Starting cluster.
+=========================================
+[SUCCESS] opengauss
+2025-05-16 06:35:00.955 6826dc94.1 [unknown] 140719594242112 [unknown] 0 dn_6001 01000  0 [BACKEND] WARNING:  could not create any HA TCP/IP sockets
+2025-05-16 06:35:00.955 6826dc94.1 [unknown] 140719594242112 [unknown] 0 dn_6001 01000  0 [BACKEND] WARNING:  could not create any HA TCP/IP sockets
+2025-05-16 06:35:00.967 6826dc94.1 [unknown] 140719594242112 [unknown] 0 dn_6001 01000  0 [BACKEND] WARNING:  Failed to initialize the memory protect for g_instance.attr.attr_storage.cstore_buffers (16 Mbytes) or shared memory (2129 Mbytes) is larger.
+=========================================
+Successfully started.
+[omm@opengauss ~]$ exit
+logout
+[root@opengauss ~]# isql -v MPPODBC
++---------------------------------------+
+| Connected!                            |
+|                                       |
+| sql-statement                         |
+| help [tablename]                      |
+| quit                                  |
+|                                       |
++---------------------------------------+
+SQL> SELECT * FROM demo.websites;
++------------+--------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| id         | name                     | url                                                                                                                                                                                                                                                            |
++------------+--------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| 1          | openGauss                | https://opengauss.org/zh/                                                                                                                                                                                                                                      |
+| 2          | Huawei Cloud             | https://www.huaweicloud.com/                                                                                                                                                                                                                                   |
+| 3          | openEuler                | https://openeuler.org/zh/                                                                                                                                                                                                                                      |
+| 4          | Huawei Support Center    | https://support.huaweicloud.com/                                                                                                                                                                                                                               |
++------------+--------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+SQLRowCount returns 4
+4 rows fetched
+SQL> quit
+ 
